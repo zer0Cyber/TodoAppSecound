@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ボイスTodo管理(改)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section class="main">
+    <div class="container">
+      <h1>TodoApp</h1>
+      <p id="start">マイクをクリックして始めてください</p>
+      <p class="center-box"><img id="mic" src="micoff.svg" /></p>
+      <div id="result-div" class="large-text"></div>
+    </div>
+  </section>
+  <script>
+    const resultDiv = document.querySelector("#result-div");
+    const micDiv = document.querySelector("#mic");
+    const text = document.querySelector("#start");
+    let speakingtime = 0;
+
+    // 音声認識機能(Chrome)
+    let rec = new webkitSpeechRecognition();
+    let stopped = true;
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.lang = "ja-JP";
+
+    micDiv.onclick = function () {
+      if (stopped == true) {
+        stopped = false;
+        resultDiv.innerHTML = "";
+        text.innerHTML = "開始しますと言ってください";
+        rec.start();
+      } else {
+        stopped = true;
+        rec.stop();
+      }
+    };
+
+    rec.onstart = function () {
+      console.log("on start");
+      micDiv.setAttribute("src", "micon.svg");
+      speakingtime = 0;
+    };
+
+    rec.onend = function () {
+      console.log("on end");
+      micDiv.setAttribute("src", "micoff.svg");
+      if (stopped == false) {
+        setTimeout(function () {
+          rec.start();
+        }, speakingtime);
+      }
+    };
+
+    rec.onresult = function (e) {
+      rec.stop();
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          console.log(e);
+          let text = e.results[i][0].transcript;
+          resultDiv.innerHTML = text;
+          console.log(text);
+          if (text == "開始します") {
+            text = "わかりました  3秒後にジャンプします";
+
+            setTimeout(function(){
+            window.location.href = 'voicememo.html';
+          }, 3*1000);
+          } else {
+            text = "よくわかりません";
+          }
+          speakingtime = text.length * 200;
+          console.log("estimate:", speakingtime, "ms");
+          speak(text);
+        }
+      }
+    };
+
+    let msg = new SpeechSynthesisUtterance();
+
+    function speak(text) {
+      msg.volume = 1.0; 
+      msg.rate = 1.0; 
+      msg.pitch = 1.0; 
+
+      msg.text = text; 
+      msg.lang = "ja-JP"; 
+
+      speechSynthesis.speak(msg);
+    }
+
+    msg.onend = function (event) {
+      console.log("喋った時間：" + event.elapsedTime + "ms");
+    };
+  </script>
+</body>
+</html>
